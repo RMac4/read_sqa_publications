@@ -54,7 +54,17 @@ extract_publication_data <- function(file_source){
   # check correct number of tables
   length(tables_raw) == nrow(sheets)
   
+  percent_flag <- purrr::map(
+    1:length(tables_raw),
+    ~tables_raw[[.x]] |> 
+      dplyr::summarise_all(~any(grepl("%", .))) |> 
+      dplyr::select(dplyr::where(~. == TRUE)) |> 
+      colnames()
+    )
+  
   # replace shorthand and convert to number ----
+  ## replace suppressed values with -1, not applicable with -2 and low with -3
+  ## if percentage symbol is present, remove and values should be divided by 100
   tables <- purrr::map(
     1:length(tables_raw),
     ~tables_raw[[.x]] |> 
@@ -69,7 +79,11 @@ extract_publication_data <- function(file_source){
         ),
         dplyr::across(
           !dplyr::matches("Subject|Level|Qualification"),
-          ~as.numeric(.x))
+          ~as.numeric(.x)),
+        dplyr::across(
+          dplyr::matches(percent_flag[[.x]]),
+          ~ ifelse(. < 0, ., . / 100)
+        )
       )
     ) |> 
     setNames(
