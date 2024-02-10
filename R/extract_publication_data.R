@@ -76,26 +76,28 @@ extract_publication_data <- function(file_source){
             stringr::str_replace_all("\\[low\\]", "-3") |> 
             stringr::str_remove_all("%") |> 
             stringr::str_remove_all(",")
-        ),
+          ),
         dplyr::across(
-          !dplyr::matches("Subject|Level|Qualification"),
+          !dplyr::matches(
+            "Subject|Level|Qualification|Category|SIMD.Decile|Centre.Type|Education.Authority|Arrangements|Component.[0-9].Name"),
           ~as.numeric(.x)),
         dplyr::across(
           dplyr::matches(percent_flag[[.x]]),
           ~ ifelse(. < 0, ., . / 100)
-        )
-      )
-    ) |> 
+          )
+        ) |>
+      dplyr::rename_with(.fn = ~stringr::str_replace_all(., "[.]", "_"))
+    ) |>
     setNames(
       sheets |> 
         dplyr::mutate(
           sheets = sheets |> 
-            stringr::str_extract_all("Table \\d*") |> 
-            stringr::str_replace_all(" ", "")
+            stringr::str_extract_all("Table \\d*.\\d*") |> 
+            stringr::str_replace_all(" ", "") |> 
+            stringr::str_remove_all(":")
         ) |>
         dplyr::pull(sheets)
       )
   
   return(list(sheets = sheets, tables = tables, notes = notes))
 }
-

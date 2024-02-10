@@ -1,7 +1,5 @@
 #### READ SQA ATTAINMENT PUBLICATION TABLES ####
 
-#TODO: Review for compatibility with AA, Appeals and Component marks.
-
 # load packages ----
 library(openxlsx)
 library(dplyr)
@@ -20,7 +18,6 @@ file_source <- set_file_path(
 
 # collect data ----
 publication_output <- extract_publication_data(file_source)
-
 
 # split data ----
 # Sheet titles
