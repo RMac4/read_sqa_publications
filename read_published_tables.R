@@ -5,6 +5,7 @@ library(openxlsx)
 library(dplyr)
 library(purrr)
 library(httr)
+library(stringr)
 
 # source functions ----
 source("R/set_file_path.R")
