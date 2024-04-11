@@ -12,13 +12,13 @@ source("R/set_file_path.R")
 source("R/extract_publication_data.R")
 
 # set path to excel workbook ----
-file_source <- set_file_path(
+file_path <- set_file_path(
   file_source = "web",
   file_name = "attainment-statistics-december-2023.xlsx"
   )
 
 # collect data ----
-publication_output <- extract_publication_data(file_source)
+publication_output <- extract_publication_data(file_path)
 
 # split data ----
 # Sheet titles

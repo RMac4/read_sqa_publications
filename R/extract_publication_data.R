@@ -1,18 +1,24 @@
 #' Extract data from SQA publications
+#' 
+#' A function to extract all tables from the accessible versions of SQA
+#' statistical publications. Replaces shorthand for suppressed values with -1, 
+#' not applicable with -2 and low with -3.
 #'
-#' @param file_source This is a file path or link created from [set_file_path]
+#' @param file_path This is a file path or link created from [set_file_path]
 #' function. Only functional for publications from 2022 onwards. 
 #'
 #' @returns The names for each sheets as per the contents page, the data tables
-#' and the notes page. Note that shorthand has been recoded to -1 for supressed 
+#' and the notes page. Note that shorthand has been recoded to -1 for suppressed 
 #' rows, -2 for not applicable and -3 for low. Dependent on the publication,
 #' percentage values may be multiplied by 100
+#'  
+#' @examples extract_publication_data("https://www.sqa.org.uk/sqa/files_ccc/attainment-statistics-december-2023.xlsx")
 #' 
 
-extract_publication_data <- function(file_source){
+extract_publication_data <- function(file_path){
   # get the number of sheets in file ----
   sheets <- openxlsx::read.xlsx(
-    xlsxFile = file_source,
+    xlsxFile = file_path,
     colNames = FALSE,
     sheet = 1,
     startRow = 3
@@ -22,7 +28,7 @@ extract_publication_data <- function(file_source){
   
   # extract the notes sheet ----
   notes <- openxlsx::read.xlsx(
-    xlsxFile = file_source,
+    xlsxFile = file_path,
     sheet = (nrow(sheets) + 2),
     startRow = 2
     )
@@ -33,7 +39,7 @@ extract_publication_data <- function(file_source){
   # set start row ----
   start_row <- dplyr::if_else(
     openxlsx::read.xlsx(
-      xlsxFile = file_source,
+      xlsxFile = file_path,
       sheet = 2,
       rows = 2,
       cols = 1,
@@ -46,7 +52,7 @@ extract_publication_data <- function(file_source){
   tables_raw <- purrr::map(
     2:(nrow(sheets)+1),
     ~openxlsx::read.xlsx(
-      xlsxFile = file_source,
+      xlsxFile = file_path,
       sheet = .x,
       startRow = start_row)
     )

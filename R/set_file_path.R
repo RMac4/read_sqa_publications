@@ -1,13 +1,12 @@
 #' Set file path to import SQA excel statistical data
 #'
 #' Sets a file path to the location of an SQA statistical excel publication.
-#' Defauls it to extract from the SQA website, but if the file has been 
+#' Default is to extract from the SQA website, but if the file has been 
 #' downloaded, a custom file path can be provided. Checks to see if the file 
-#' exists before creating the file path for further use. Default is extraction 
-#' from the web.
+#' exists before creating the file path for further use.
 #'
-#' @param file_source Options are either "web" or "custom". Default value is "
-#' web", which provides a direct file path to SQA publication location. If a 
+#' @param file_source Options are either "web" or "custom". Default value is
+#' "web", which provides a direct file path to SQA publication location. If a 
 #' spreadsheet has been downloaded, then a custom file path can be used with 
 #' the files location using "custom" and then providing the file path.
 #' @param file_name String containing the name of the excel file required.
