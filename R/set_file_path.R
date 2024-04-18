@@ -9,7 +9,9 @@
 #' "web", which provides a direct file path to SQA publication location. If a 
 #' spreadsheet has been downloaded, then a custom file path can be used with 
 #' the files location using "custom" and then providing the file path.
+#' 
 #' @param file_name String containing the name of the excel file required.
+#' 
 #' @param custom_path String containing the custom file path of the excel file.
 #' Required if file_source is set to "custom".
 #'

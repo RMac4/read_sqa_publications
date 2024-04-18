@@ -14,7 +14,8 @@ source("R/extract_publication_data.R")
 # set path to excel workbook ----
 file_path <- set_file_path(
   file_source = "web",
-  file_name = "attainment-statistics-december-2023.xlsx"
+  file_name = "attainment-statistics-december-2023.xlsx",
+  custom_path = NA_character_
   )
 
 # collect data ----

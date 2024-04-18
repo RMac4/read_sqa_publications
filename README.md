@@ -17,6 +17,11 @@ the SQA website.](https://www.sqa.org.uk/sqa/92537.html)
 This code extracts the data contained within the data tables to allow
 for analysis by users.
 
+# Limitations
+
+The code will only work for SQA statistical publications with the
+updated excel layout, this will exclude publications prior to 2022.
+
 # R Packages
 
 The following R packages are required to be installed:
@@ -32,21 +37,25 @@ The following R packages are required to be installed:
 Run each of the following sections in order:
 
 - Load packages and source functions.
-  - **Description**: Loads requires R packages and functions required
-    for reading data tables.
+  - **Description**: Loads required R packages and functions for reading
+    data tables.
 - Set path to excel workbook
   - **Description**: Creates the file patch for the data tables. Can be
-    set to the web or local file.
-  - **Scripts**: `set_file_path.R`
-  - **Output**: `file_path`
+    set to a web link or local file path.
+  - **Scripts**: Runs the R script `set_file_path.R`.
+  - **Output**: Outputs a variable called `file_path` in the R
+    environment.
 - Collect data
-  - **Description**: Takes file path created above and extracts sheet
-    names, data tables, and notes to a nested list.
-  - **Scripts**: `extract_publication_data.R`
-  - **Output**: `publication_output`
+  - **Description**: Takes file path created in ‘Set path to excel
+    workbook’ section and extracts sheet names, data tables, and notes
+    to a nested list.
+  - **Scripts**: Runs the R script `extract_publication_data.R`.
+  - **Output**: Outputs a nested list `publication_output` in the R
+    environment.
 - Split data
-  - **Description**: Splits data collected in previous section.
-  - **Output**: `sheets`, `tables`, and `notes`
+  - **Description**: Splits data collected in ‘Collect data’ section.
+  - **Output**: Outputs a list of data called `tables` in the R
+    environment, as well as data frames called `sheets` and `notes`.
 
 # Project structure/archive
 
@@ -58,12 +67,15 @@ following sub-directory and a taskmaster file:
 ## `R/`
 
 - `set_file_path.R`
-  - functions to create a file path either from the web or local device.
+  - contains a function `set_file_path()` that creates a file path to
+    the location of an SQA statistical excel publication either from the
+    web or on the local device.
 - `extract_publication_data.R`
-  - function to extract sheet names, data tables, and notes to a nested
-    list.
+  - contains a function `extract_publication_data()` that extracts the
+    sheet names, data tables, and notes of an SQA statistical excel
+    publication to a nested list.
 
-# `read_published_tables.R`
+## `read_published_tables.R`
 
 Script which runs to collect data, calling other scripts in `R/`.
 Contains some variables which will need updated.
