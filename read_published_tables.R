@@ -8,18 +8,14 @@ library(httr)
 library(stringr)
 
 # source functions ----
-source("R/set_file_path.R")
 source("R/extract_publication_data.R")
 
-# set path to excel workbook ----
-file_path <- set_file_path(
+# set path to excel workbook and collect data----
+publication_output <- extract_publication_data(
   file_source = "web",
   file_name = "attainment-statistics-december-2023.xlsx",
   custom_path = NA_character_
   )
-
-# collect data ----
-publication_output <- extract_publication_data(file_path)
 
 # split data ----
 # Sheet titles
