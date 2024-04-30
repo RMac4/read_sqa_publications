@@ -24,15 +24,23 @@
 #' rows, -2 for not applicable and -3 for low. Dependent on the publication,
 #' percentage values may be multiplied by 100
 #' 
-#' @import openxlsx dplyr httr stringr purrr
+#' @import dplyr stringr
+#' @importFrom openxlsx read.xlsx
+#' @importFrom purrr map
+#' @importFrom httr status_code HEAD
 #'  
-#' @examples extract_publication_data(file_source = "web", file_name = "attainment-statistics-december-2023.xlsx")
-#' 
+#' @examples
+#' extract_publication_data(
+#'   file_source = "web",
+#'   file_name = "attainment-statistics-december-2023.xlsx"
+#'   )
+#'
 
 extract_publication_data <- function(file_source = "web",
                                      file_name = NA_character_,
                                      custom_path = NA_character_){
   
+  # initial validation checks ----
   ## check valid source option has been input
   stopifnot('Must be either "web" or "custom". If "custom" provide the file path' = 
               file_source %in% c("web", "custom"))
@@ -88,8 +96,12 @@ extract_publication_data <- function(file_source = "web",
     startRow = 2
     )
   
-  # check correct number of sheets
-  nrow(sheets)
+  # check correct number of sheets ----
+  cat(paste("There should be",
+            nrow(sheets),
+            "tables extracted from this publication:\n"), 
+      paste(sheets$sheets, "\n")
+      )
   
   # set start row ----
   start_row <- dplyr::if_else(
@@ -112,24 +124,30 @@ extract_publication_data <- function(file_source = "web",
       startRow = start_row)
     )
   
-  # check correct number of tables
-  length(tables_raw) == nrow(sheets)
+  # check correct number of tables ----
+  if(length(tables_raw) == nrow(sheets)){
+    cat("\nThere were", length(tables_raw), "tables extracted from this publication.\n")
+  }else{
+    stop("Number of data tables extracted does not match expected number of tables.")
+  }
   
+  # replace shorthand and convert to number ----  
+  ## flag any columns with a percentage symbol so these can be altered
   percent_flag <- purrr::map(
     1:length(tables_raw),
     ~tables_raw[[.x]] |> 
       dplyr::summarise_all(~any(grepl("%", .))) |> 
       dplyr::select(dplyr::where(~. == TRUE)) |> 
       colnames()
-    )
+      )
   
-  # replace shorthand and convert to number ----
   ## replace suppressed values with -1, not applicable with -2 and low with -3
   ## if percentage symbol is present, remove and values should be divided by 100
   tables <- purrr::map(
     1:length(tables_raw),
     ~tables_raw[[.x]] |> 
       dplyr::mutate(
+        ### replace shorthand and remove commas and percentage symbols.
         dplyr::across(
           dplyr::everything(), 
           ~stringr::str_replace_all(.x, "\\[c\\]", "-1") |> 
@@ -138,10 +156,12 @@ extract_publication_data <- function(file_source = "web",
             stringr::str_remove_all("%") |> 
             stringr::str_remove_all(",")
           ),
+        ### convert character number columns to numeric values
         dplyr::across(
           !dplyr::matches(
             "Subject|Level|Qualification|Category|SIMD.Decile|Centre.Type|Education.Authority|Arrangements|Component.[0-9].Name"),
           ~as.numeric(.x)),
+        ### change percentages to their decimal value
         dplyr::across(
           dplyr::matches(percent_flag[[.x]]),
           ~ ifelse(. < 0, ., . / 100)
@@ -160,5 +180,8 @@ extract_publication_data <- function(file_source = "web",
         dplyr::pull(sheets)
       )
   
+  cat("\nShorthand has been replaced as follows:\n[c] with -1 (suppressed),\n[z] with -2 (not applicable),\n[low] with -3")
+  
+  # function returns ----
   return(list(sheets = sheets, tables = tables, notes = notes))
 }
