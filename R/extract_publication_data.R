@@ -105,10 +105,11 @@ extract_publication_data <- function(file_source = "web",
   
   # expected tables ----
   ## tell user the number of tables to be extracted and what they should be
-  cat(paste("There should be",
-            nrow(sheets),
-            "tables extracted from this publication:\n"), 
-      paste(sheets$sheets, "\n"))
+  cat("There should be", 
+      nrow(sheets), 
+      "tables extracted from this publication:\n",
+      paste("-", sheets$sheets, "\n")
+      )
   
   # set start row ----
   ## look at cell A2 in first data table sheet for specific text used for 
@@ -119,10 +120,12 @@ extract_publication_data <- function(file_source = "web",
       sheet = 2,
       rows = 2,
       cols = 1,
-      colNames = FALSE) |>
+      colNames = FALSE
+      ) |>
       stringr::str_detect("Some") == TRUE, 
-    3, 
-    4)
+    3, ### if text in A3, start at row three
+    4 ### if text is not in A2, start at row four
+    )
   
   # read all tables into a list ----
   tables_raw <- purrr::map(
@@ -161,22 +164,21 @@ extract_publication_data <- function(file_source = "web",
     ~tables_raw[[.x]] |> 
       dplyr::mutate(
         ### replace shorthand and remove commas and percentage symbols.
+        ### convert character number columns to numeric values
         dplyr::across(
-          dplyr::everything(), 
+          !dplyr::matches(
+            c("Subject", "Level", "Qualification", "Category", "SIMD.Decile",
+              "Centre.Type", "Education.Authority", "Arrangements",
+              "Component.[0-9].Name", "National.[4-5].Title",
+              "[Higher|Advanced.Higher].Title", "[National.5|Higher].Grade")
+            ),
           ~stringr::str_replace_all(.x, "\\[c\\]", "-1") |> 
             stringr::str_replace_all("\\[z\\]", "-2") |> 
             stringr::str_replace_all("\\[low\\]", "-3") |> 
             stringr::str_remove_all("%") |> 
-            stringr::str_remove_all(",")
+            stringr::str_remove_all(",") |> 
+            as.numeric()
           ),
-        ### convert character number columns to numeric values
-        dplyr::across(
-          !dplyr::matches(
-            "Subject|Level|Qualification|Category|SIMD.Decile|Centre.Type|
-            |Education.Authority|Arrangements|Component.[0-9].Name|
-            |National.[4-5].Title|[Higher|Advanced.Higher].Title|
-            |National.5.Grade|Higher.Grade"),
-          ~as.numeric(.x)),
         ### change percentages to their decimal value
         dplyr::across(
           dplyr::matches(percent_flag[[.x]]),
@@ -194,12 +196,15 @@ extract_publication_data <- function(file_source = "web",
             stringr::str_extract_all("Table \\d*.\\d*") |> 
             stringr::str_replace_all(" ", "") |> 
             stringr::str_remove_all(":")
-        ) |>
+          ) |>
         dplyr::pull(sheets)
       )
   
   ## text to notify user that shorthand values have been replaced
-  cat("\nShorthand has been replaced as follows:\n[c] with -1 (suppressed),\n[z] with -2 (not applicable),\n[low] with -3\n")
+  cat("\nShorthand has been replaced as follows:",
+      "\n- [c] with -1 (suppressed)",
+      "\n- [z] with -2 (not applicable)",
+      "\n- [low] with -3\n")
   
   # function returns ----
   return(list(sheets = sheets, tables = tables, notes = notes))
