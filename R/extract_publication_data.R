@@ -172,7 +172,10 @@ extract_publication_data <- function(file_source = "web",
         ### convert character number columns to numeric values
         dplyr::across(
           !dplyr::matches(
-            "Subject|Level|Qualification|Category|SIMD.Decile|Centre.Type|Education.Authority|Arrangements|Component.[0-9].Name"),
+            "Subject|Level|Qualification|Category|SIMD.Decile|Centre.Type|
+            |Education.Authority|Arrangements|Component.[0-9].Name|
+            |National.[4-5].Title|[Higher|Advanced.Higher].Title|
+            |National.5.Grade|Higher.Grade"),
           ~as.numeric(.x)),
         ### change percentages to their decimal value
         dplyr::across(
@@ -196,7 +199,7 @@ extract_publication_data <- function(file_source = "web",
       )
   
   ## text to notify user that shorthand values have been replaced
-  cat("\nShorthand has been replaced as follows:\n[c] with -1 (suppressed),\n[z] with -2 (not applicable),\n[low] with -3")
+  cat("\nShorthand has been replaced as follows:\n[c] with -1 (suppressed),\n[z] with -2 (not applicable),\n[low] with -3\n")
   
   # function returns ----
   return(list(sheets = sheets, tables = tables, notes = notes))
