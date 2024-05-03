@@ -18,10 +18,14 @@
 #' 
 #' @param custom_path String containing the custom file path of the excel file.
 #' Required if file_source is set to "custom".
+#' 
+#' @param nested_list Logical value to specify if output is required as a nested 
+#' list (will output to console unless assigned). Default value is FALSE, will
+#' output into separate named data in the global environment.
 #'
 #' @returns The names for each sheets as per the contents page, the data tables
-#' and the notes page to the global environment. Note that shorthand has been
-#' recoded to -1 for suppressed rows, -2 for not applicable and -3 for low.
+#' and the notes page. Note that shorthand has been recoded to -1 for suppressed
+#' rows, -2 for not applicable and -3 for low.
 #' 
 #' @import dplyr stringr
 #' @importFrom openxlsx read.xlsx
@@ -33,11 +37,18 @@
 #'   file_source = "web",
 #'   file_name = "attainment-statistics-december-2023.xlsx"
 #'   )
+#'   
+#' pub_data <- extract_publication_data(
+#'   file_source = "web",
+#'   file_name = "attainment-statistics-december-2023.xlsx",
+#'   nested_list = TRUE
+#'   )
 #'
 
 extract_publication_data <- function(file_source = "web",
                                      file_name = NA_character_,
-                                     custom_path = NA_character_){
+                                     custom_path = NA_character_,
+                                     nested_list = FALSE){
   
   # input validation checks ----
   ## check valid file source option has been input, if not tell user to check
@@ -206,12 +217,17 @@ extract_publication_data <- function(file_source = "web",
       "\n- [z] with -2 (not applicable)",
       "\n- [low] with -3\n")
   
-  # output data to the global environment ----
-  list(sheets = sheets, notes = notes) |> 
-    list2env(envir = .GlobalEnv) |> 
-    invisible()
-  
-  tables |>  
-    list2env(envir = .GlobalEnv) |> 
-    invisible()
+  # output data ----
+  if(nested_list){
+    ## nested list
+    return(list(sheets = sheets, tables = tables, notes = notes))
+  }else{
+    ## individual tables
+    list(sheets = sheets, notes = notes) |> 
+      list2env(envir = .GlobalEnv) |> 
+      invisible()
+    tables |>  
+      list2env(envir = .GlobalEnv) |> 
+      invisible()
+  }
 }

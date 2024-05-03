@@ -14,5 +14,6 @@ source("R/extract_publication_data.R")
 extract_publication_data(
   file_source = "web",
   file_name = "attainment-statistics-december-2023.xlsx",
-  custom_path = NA_character_
+  custom_path = NA_character_,
+  nested_list = FALSE
   )
