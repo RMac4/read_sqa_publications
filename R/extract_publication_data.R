@@ -20,8 +20,8 @@
 #' Required if file_source is set to "custom".
 #'
 #' @returns The names for each sheets as per the contents page, the data tables
-#' and the notes page. Note that shorthand has been recoded to -1 for suppressed 
-#' rows, -2 for not applicable and -3 for low.
+#' and the notes page to the global environment. Note that shorthand has been
+#' recoded to -1 for suppressed rows, -2 for not applicable and -3 for low.
 #' 
 #' @import dplyr stringr
 #' @importFrom openxlsx read.xlsx
@@ -206,6 +206,12 @@ extract_publication_data <- function(file_source = "web",
       "\n- [z] with -2 (not applicable)",
       "\n- [low] with -3\n")
   
-  # function returns ----
-  return(list(sheets = sheets, tables = tables, notes = notes))
+  # output data to the global environment ----
+  list(sheets = sheets, notes = notes) |> 
+    list2env(envir = .GlobalEnv) |> 
+    invisible()
+  
+  tables |>  
+    list2env(envir = .GlobalEnv) |> 
+    invisible()
 }
