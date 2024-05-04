@@ -23,9 +23,9 @@
 #' list (will output to console unless assigned). Default value is FALSE, will
 #' output into separate named data in the global environment.
 #'
-#' @returns The names for each sheets as per the contents page, the data tables
-#' and the notes page. Note that shorthand has been recoded to -1 for suppressed
-#' rows, -2 for not applicable and -3 for low.
+#' @returns The publication title, names for each sheets as per the contents
+#' page, the data tables and the notes page. Note that shorthand has been 
+#' recoded to -1 for suppressed rows, -2 for not applicable and -3 for low.
 #' 
 #' @import dplyr stringr
 #' @importFrom openxlsx read.xlsx
@@ -69,7 +69,7 @@ extract_publication_data <- function(file_source = "web",
     if (httr::status_code(httr::HEAD(link)) == 200){
       link
     }else{
-      stop(paste("File can't be found, please check the provided name of the excel file:",
+      stop(paste("File can't be found, please check the name of the excel file provided:",
                  paste0('"', file_name,'"')))
     }
     
@@ -89,11 +89,22 @@ extract_publication_data <- function(file_source = "web",
     if (file.exists(link)){
       link
     }else{
-      stop(paste("File can't be found, please check the provided file path and name of the excel file.",
+      stop(paste("File can't be found, please check the file path and name of the excel file provided:",
                  "\nFile path:", paste0('"', custom_path,'"'),
                  "\nFile name:" , paste0('"', file_name,'"')))
     }
   }
+  
+  # get the publication title ----
+  title <- openxlsx::read.xlsx(
+    xlsxFile = link,
+    colNames = FALSE,
+    sheet = 1,
+    startRow = 1,
+    rows = 1 
+    ) |> 
+    dplyr::rename(title = X1) |> 
+    dplyr::pull(title)
   
   # get the number of sheets in file ----
   sheets <- openxlsx::read.xlsx(
@@ -118,7 +129,8 @@ extract_publication_data <- function(file_source = "web",
   ## tell user the number of tables to be extracted and what they should be
   cat("There should be", 
       nrow(sheets), 
-      "tables extracted from this publication:\n",
+      "tables extracted from",
+      paste0(title, ":\n"),
       paste("-", sheets$sheets, "\n")
       )
   
@@ -220,10 +232,10 @@ extract_publication_data <- function(file_source = "web",
   # output data ----
   if(nested_list){
     ## nested list
-    return(list(sheets = sheets, tables = tables, notes = notes))
+    return(list(title = title, sheets = sheets, tables = tables, notes = notes))
   }else{
     ## individual tables
-    list(sheets = sheets, notes = notes) |> 
+    list(title = title, sheets = sheets, notes = notes) |> 
       list2env(envir = .GlobalEnv) |> 
       invisible()
     tables |>  
