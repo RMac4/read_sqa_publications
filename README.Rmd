@@ -19,6 +19,10 @@ This code extracts the data contained within the data tables to allow for analys
 
 The code will only work for SQA statistical publications with the updated excel layout, this will exclude publications prior to 2022.
 
+The default `nested_list` option will allow users to output data directly into the global environment. However, if trying to extract data from multiple publications, this could create issues with environments or overwrite previous tables. 
+
+Output needs to be assigned when `nested_list` is set to `TRUE`, otherwise content will be output into the console. A nested list will allow the user to utilise `purr::map` to extract data from multiple publications.
+
 # R Packages
 
 The following R packages are required to be installed:
