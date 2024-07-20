@@ -98,30 +98,42 @@ extract_publication_data <- function(file_source = "web",
   # load file as a workbook object ----
   wb <- openxlsx::loadWorkbook(file = link)
   
-  # get the publication title ----
-  title <- openxlsx::read.xlsx(
-    xlsxFile = wb,
-    colNames = FALSE,
-    sheet = 1,
-    startRow = 1,
-    rows = 1 
-    ) |> 
-    dplyr::rename(title = X1) |> 
-    dplyr::pull(title)
-  
   # get the number of sheets in file ----
   sheets <- data.frame(sheets = wb$sheet_names) |> 
-    dplyr::filter(!sheets %in% c("Contents", "Notes"))
+    dplyr::filter(!sheets %in% c("Contents", "Notes"))  
+  
+  # get the publication title ----
+  if(any(stringr::str_detect(string = wb$sheet_names, pattern = "Contents"))){
+    title <- openxlsx::read.xlsx(
+      xlsxFile = wb,
+      colNames = FALSE,
+      sheet = wb$sheet_names[stringr::str_detect(string = wb$sheet_names, 
+                                                 pattern = "Contents")],
+      startRow = 1,
+      rows = 1 
+      ) |> 
+      dplyr::rename(title = X1) |> 
+      dplyr::pull(title)
+  } else {
+    title <- "There was no contents sheet in this file, so could not extract a title." 
+    message(title)
+  }
   
   # extract the notes sheet ----
   ## notes sheet is always the last sheet in publications, add two to number of
   ## tables to account for contents page
-  notes <- openxlsx::read.xlsx(
-    xlsxFile = wb,
-    sheet = (nrow(sheets) + 2),
-    startRow = 2
-    )
-  
+  if(any(stringr::str_detect(string = wb$sheet_names, pattern = "Notes"))){
+    notes <- openxlsx::read.xlsx(
+      xlsxFile = wb,
+      sheet = wb$sheet_names[stringr::str_detect(string = wb$sheet_names, 
+                                                 pattern = "Notes")],
+      startRow = 2
+      )
+  } else {
+    notes <- "There was no notes sheet in this file." 
+    message(notes)
+  }
+
   # expected tables ----
   ## tell user the number of tables to be extracted and what they should be
   cat("There should be", 
@@ -234,7 +246,9 @@ extract_publication_data <- function(file_source = "web",
                 notes = notes))
   }else{
     ## individual tables
-    list(title = title, sheets = sheets, notes = notes) |> 
+    list(title = title, 
+         sheets = sheets, 
+         notes = notes) |> 
       list2env(envir = .GlobalEnv) |> 
       invisible()
     tables |>  
