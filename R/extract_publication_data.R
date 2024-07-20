@@ -28,7 +28,7 @@
 #' recoded to -1 for suppressed rows, -2 for not applicable and -3 for low.
 #' 
 #' @import dplyr stringr
-#' @importFrom openxlsx read.xlsx
+#' @importFrom openxlsx read.xlsx loadWorkbook
 #' @importFrom purrr map
 #' @importFrom httr status_code HEAD
 #'  
@@ -95,9 +95,12 @@ extract_publication_data <- function(file_source = "web",
     }
   }
   
+  # load file as a workbook object ----
+  wb <- openxlsx::loadWorkbook(file = link)
+  
   # get the publication title ----
   title <- openxlsx::read.xlsx(
-    xlsxFile = link,
+    xlsxFile = wb,
     colNames = FALSE,
     sheet = 1,
     startRow = 1,
@@ -107,20 +110,14 @@ extract_publication_data <- function(file_source = "web",
     dplyr::pull(title)
   
   # get the number of sheets in file ----
-  sheets <- openxlsx::read.xlsx(
-    xlsxFile = link,
-    colNames = FALSE,
-    sheet = 1,
-    startRow = 3
-    ) |> 
-    dplyr::rename(sheets = X1) |> 
-    dplyr::filter(stringr::str_detect(sheets, "Table"))
+  sheets <- data.frame(sheets = wb$sheet_names) |> 
+    dplyr::filter(!sheets %in% c("Contents", "Notes"))
   
   # extract the notes sheet ----
   ## notes sheet is always the last sheet in publications, add two to number of
   ## tables to account for contents page
   notes <- openxlsx::read.xlsx(
-    xlsxFile = link,
+    xlsxFile = wb,
     sheet = (nrow(sheets) + 2),
     startRow = 2
     )
@@ -136,25 +133,25 @@ extract_publication_data <- function(file_source = "web",
   
   # set start row ----
   ## look at cell A2 in first data table sheet for specific text used for 
-  ## shorthand note identify start of data table
+  ## number of tables note to identify start of data table
   start_row <- dplyr::if_else(
     openxlsx::read.xlsx(
-      xlsxFile = link,
+      xlsxFile = wb,
       sheet = 2,
       rows = 2,
       cols = 1,
       colNames = FALSE
       ) |>
-      stringr::str_detect("Some") == TRUE, 
-    3, ### if text in A3, start at row three
-    4 ### if text is not in A2, start at row four
+      stringr::str_detect(pattern = "This worksheet contains one table") == TRUE, 
+    4, ### if text in A2, start at row four
+    3 ### if text is not in A2, start at row three
     )
   
   # read all tables into a list ----
   tables_raw <- purrr::map(
-    2:(nrow(sheets)+1),
-    ~openxlsx::read.xlsx(
-      xlsxFile = link,
+    .x = sheets$sheets,
+    .f = ~openxlsx::read.xlsx(
+      xlsxFile = wb,
       sheet = .x,
       startRow = start_row)
     )
@@ -170,11 +167,11 @@ extract_publication_data <- function(file_source = "web",
     stop("Number of tables extracted does not match expected number of tables.")
   }
   
-  # replace shorthand and convert to number ----  
+  # replace shorthand and convert to n6umber ----  
   ## flag any columns with a percentage symbol so these can be altered
   percent_flag <- purrr::map(
-    1:length(tables_raw),
-    ~tables_raw[[.x]] |> 
+    .x = 1:length(tables_raw),
+    .f = ~tables_raw[[.x]] |> 
       dplyr::summarise_all(~any(grepl("%", .))) |> 
       dplyr::select(dplyr::where(~. == TRUE)) |> 
       colnames()
@@ -183,8 +180,8 @@ extract_publication_data <- function(file_source = "web",
   ## replace suppressed values with -1, not applicable with -2 and low with -3
   ## if percentage symbol is present, remove and values should be divided by 100
   tables <- purrr::map(
-    1:length(tables_raw),
-    ~tables_raw[[.x]] |> 
+    .x = 1:length(tables_raw),
+    .f = ~tables_raw[[.x]] |> 
       dplyr::mutate(
         ### replace shorthand and remove commas and percentage symbols.
         ### convert character number columns to numeric values
@@ -195,33 +192,32 @@ extract_publication_data <- function(file_source = "web",
               "Component.[0-9].Name", "National.[4-5].Title",
               "[Higher|Advanced.Higher].Title", "[National.5|Higher].Grade")
             ),
-          ~stringr::str_replace_all(.x, "\\[c\\]", "-1") |> 
-            stringr::str_replace_all("\\[z\\]", "-2") |> 
-            stringr::str_replace_all("\\[low\\]", "-3") |> 
-            stringr::str_remove_all("%") |> 
-            stringr::str_remove_all(",") |> 
+          ~stringr::str_replace_all(string = .x, 
+                                    pattern = "\\[c\\]", 
+                                    replacement = "-1") |> 
+            stringr::str_replace_all(pattern = "\\[z\\]", 
+                                     replacement = "-2") |> 
+            stringr::str_replace_all(pattern = "\\[low\\]", 
+                                     replacement = "-3") |> 
+            stringr::str_remove_all(pattern = "%") |> 
+            stringr::str_remove_all(pattern = ",") |> 
             as.numeric()
           ),
         ### change percentages to their decimal value
         dplyr::across(
           dplyr::matches(percent_flag[[.x]]),
-          ~ifelse(. < 0, ., . / 100)
+          ~ifelse(test = . < 0,
+                  yes = .,
+                  no = . / 100)
           )
         ) |>
       ### tidy column names
-      dplyr::rename_with(.fn = ~stringr::str_replace_all(., "[.]", "_"))
+      dplyr::rename_with(.fn = ~stringr::str_replace_all(string = .,
+                                                         pattern = "[.]", 
+                                                         replacement = "_"))
     ) |>
     ## set name for each element of list to associated table number
-    setNames(
-      sheets |> 
-        dplyr::mutate(
-          sheets = sheets |> 
-            stringr::str_extract_all("Table \\d*.\\d*") |> 
-            stringr::str_replace_all(" ", "") |> 
-            stringr::str_remove_all(":")
-          ) |>
-        dplyr::pull(sheets)
-      )
+    setNames(sheets |> dplyr::pull(sheets))
   
   ## text to notify user that shorthand values have been replaced
   cat("\nShorthand has been replaced as follows:",
@@ -232,7 +228,10 @@ extract_publication_data <- function(file_source = "web",
   # output data ----
   if(nested_list){
     ## nested list
-    return(list(title = title, sheets = sheets, tables = tables, notes = notes))
+    return(list(title = title, 
+                sheets = sheets, 
+                tables = tables,
+                notes = notes))
   }else{
     ## individual tables
     list(title = title, sheets = sheets, notes = notes) |> 
